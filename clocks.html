@@ -12,46 +12,44 @@
     text-align: center;
     padding: 40px;
   }
-  h1 {
-    margin-bottom: 30px;
-    font-size: 2rem;
-  }
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 25px;
   }
   .card {
     background: rgba(255,255,255,0.1);
-    border-radius: 16px;
-    padding: 20px;
+    border-radius: 18px;
+    padding: 25px;
     backdrop-filter: blur(8px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     transition: transform 0.2s;
   }
   .card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-6px);
   }
   .city {
-    font-size: 1.3rem;
-    font-weight: bold;
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin-bottom: 10px;
   }
   .time {
-    font-size: 1.8rem;
-    margin: 10px 0;
+    font-size: 2.4rem;
+    font-weight: 700;
+    margin: 15px 0;
   }
   .temp {
-    font-size: 1.4rem;
+    font-size: 1.8rem;
+    font-weight: 500;
   }
   .forecast {
-    font-size: 0.9rem;
-    margin-top: 8px;
+    font-size: 1.1rem;
+    margin-top: 10px;
     opacity: 0.85;
   }
 </style>
 </head>
 <body>
-  <h1>🌍 Dashboard de Horas e Previsão do Tempo</h1>
   <div class="grid" id="dashboard"></div>
 
 <script>
@@ -88,8 +86,12 @@ function updateDashboard() {
 
   cities.forEach(async (city) => {
     const weather = await fetchWeather(city);
+    const now = new Date().toLocaleTimeString("pt-PT", { 
+      timeZone: city.timezone, 
+      hour: "2-digit", 
+      minute: "2-digit" 
+    });
 
-    const now = new Date().toLocaleString("pt-PT", { timeZone: city.timezone });
     const currentTemp = weather.current?.temperature_2m ?? "--";
     const currentCode = weather.current?.weathercode ?? 0;
     const nextHourTemp = weather.hourly?.temperature_2m?.[1] ?? "--";
