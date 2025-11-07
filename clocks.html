@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de Horas e Tempo</title>
+<style>
+  body {
+    font-family: "Poppins", sans-serif;
+    background: linear-gradient(135deg, #2c3e50, #4ca1af);
+    color: #fff;
+    text-align: center;
+    padding: 40px;
+  }
+  h1 {
+    margin-bottom: 30px;
+    font-size: 2rem;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+  }
+  .card {
+    background: rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 20px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    transition: transform 0.2s;
+  }
+  .card:hover {
+    transform: translateY(-5px);
+  }
+  .city {
+    font-size: 1.3rem;
+    font-weight: bold;
+  }
+  .time {
+    font-size: 1.8rem;
+    margin: 10px 0;
+  }
+  .temp {
+    font-size: 1.4rem;
+  }
+  .forecast {
+    font-size: 0.9rem;
+    margin-top: 8px;
+    opacity: 0.85;
+  }
+</style>
+</head>
+<body>
+  <h1>🌍 Dashboard de Horas e Previsão do Tempo</h1>
+  <div class="grid" id="dashboard"></div>
+
+<script>
+const cities = [
+  { name: "Lisboa 🇵🇹", lat: 38.7169, lon: -9.1399, timezone: "Europe/Lisbon" },
+  { name: "Riyadh 🇸🇦", lat: 24.7136, lon: 46.6753, timezone: "Asia/Riyadh" },
+  { name: "Luanda 🇦🇴", lat: -8.8383, lon: 13.2344, timezone: "Africa/Luanda" },
+  { name: "Detroit 🇺🇸", lat: 42.3314, lon: -83.0458, timezone: "America/Detroit" },
+  { name: "Kaiseraugst 🇨🇭", lat: 47.5397, lon: 7.7314, timezone: "Europe/Zurich" },
+  { name: "Homburg 🇫🇷", lat: 49.3167, lon: 7.3333, timezone: "Europe/Paris" },
+  { name: "Utrecht 🇳🇱", lat: 52.0907, lon: 5.1214, timezone: "Europe/Amsterdam" },
+  { name: "Morrisville 🇺🇸", lat: 35.8235, lon: -78.8256, timezone: "America/New_York" }
+];
+
+async function fetchWeather(city) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,weathercode&hourly=temperature_2m,weathercode&timezone=${city.timezone}`;
+  const res = await fetch(url);
+  return res.json();
+}
+
+function getWeatherIcon(code) {
+  const icons = {
+    0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️",
+    45: "🌫️", 48: "🌫️",
+    51: "🌦️", 61: "🌧️", 71: "🌨️",
+    80: "🌦️", 95: "⛈️"
+  };
+  return icons[code] || "❓";
+}
+
+function updateDashboard() {
+  const dashboard = document.getElementById("dashboard");
+  dashboard.innerHTML = "";
+
+  cities.forEach(async (city) => {
+    const weather = await fetchWeather(city);
+
+    const now = new Date().toLocaleString("pt-PT", { timeZone: city.timezone });
+    const currentTemp = weather.current?.temperature_2m ?? "--";
+    const currentCode = weather.current?.weathercode ?? 0;
+    const nextHourTemp = weather.hourly?.temperature_2m?.[1] ?? "--";
+    const nextHourCode = weather.hourly?.weathercode?.[1] ?? 0;
+
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `
+      <div class="city">${city.name}</div>
+      <div class="time">${now}</div>
+      <div class="temp">${getWeatherIcon(currentCode)} ${currentTemp}°C</div>
+      <div class="forecast">Próxima hora: ${getWeatherIcon(nextHourCode)} ${nextHourTemp}°C</div>
+    `;
+    dashboard.appendChild(div);
+  });
+}
+
+// Atualiza agora e depois a cada 60 minutos
+updateDashboard();
+setInterval(updateDashboard, 3600000);
+</script>
+</body>
+</html>
