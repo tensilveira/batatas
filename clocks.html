@@ -64,6 +64,7 @@ const cities = [
   { name: "Morrisville 🇺🇸", lat: 35.8235, lon: -78.8256, timezone: "America/New_York" }
 ];
 
+// ====== API METEO ======
 async function fetchWeather(city) {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,weathercode&hourly=temperature_2m,weathercode&timezone=${city.timezone}`;
   const res = await fetch(url);
@@ -80,16 +81,18 @@ function getWeatherIcon(code) {
   return icons[code] || "❓";
 }
 
-function updateDashboard() {
+// ====== CRIA O DASHBOARD COMPLETO (hora + tempo) ======
+async function updateDashboard() {
   const dashboard = document.getElementById("dashboard");
   dashboard.innerHTML = "";
 
-  cities.forEach(async (city) => {
+  for (const city of cities) {
     const weather = await fetchWeather(city);
-    const now = new Date().toLocaleTimeString("pt-PT", { 
-      timeZone: city.timezone, 
-      hour: "2-digit", 
-      minute: "2-digit" 
+
+    const now = new Date().toLocaleTimeString("pt-PT", {
+      timeZone: city.timezone,
+      hour: "2-digit",
+      minute: "2-digit"
     });
 
     const currentTemp = weather.current?.temperature_2m ?? "--";
@@ -99,19 +102,38 @@ function updateDashboard() {
 
     const div = document.createElement("div");
     div.className = "card";
+
     div.innerHTML = `
       <div class="city">${city.name}</div>
-      <div class="time">${now}</div>
+      <div class="time" data-timezone="${city.timezone}">${now}</div>
       <div class="temp">${getWeatherIcon(currentCode)} ${currentTemp}°C</div>
       <div class="forecast">Próxima hora: ${getWeatherIcon(nextHourCode)} ${nextHourTemp}°C</div>
     `;
+
     dashboard.appendChild(div);
+  }
+}
+
+// ====== ATUALIZA APENAS AS HORAS (MINUTO A MINUTO) ======
+function updateTimesOnly() {
+  document.querySelectorAll(".time").forEach(el => {
+    const timezone = el.getAttribute("data-timezone");
+    el.textContent = new Date().toLocaleTimeString("pt-PT", {
+      timeZone: timezone,
+      hour: "2-digit",
+      minute: "2-digit"
+    });
   });
 }
 
-// Atualiza agora e depois a cada 60 minutos
+// Atualiza tudo agora
 updateDashboard();
+
+// Atualiza tempo e previsões de hora a hora
 setInterval(updateDashboard, 3600000);
+
+// Atualiza só as horas a cada minuto
+setInterval(updateTimesOnly, 60000);
 </script>
 </body>
 </html>
