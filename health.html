@@ -27,7 +27,7 @@
     backdrop-filter: blur(6px);
     box-shadow: 0 4px 20px rgba(0,0,0,0.6);
     border: 1px solid rgba(80, 80, 80, 0.4);
-    transition: transform 0.2s, background 0.2s;
+    transition: transform 0.2s, background 0.2s, border-color 0.2s;
   }
 
   .card:hover {
@@ -35,26 +35,39 @@
     background: rgba(30, 30, 30, 0.95);
   }
 
+  /* Estado normal */
+  .ok-card {
+    background: rgba(20,20,20,0.85);
+    border-color: rgba(80, 80, 80, 0.4);
+    color: #fff;
+  }
+
+  /* Estado amarelo - WARN */
+  .warn-card {
+    background: #f1c40f;
+    color: #000;
+    border-color: #b7950b;
+  }
+
+  /* Estado vermelho - FAIL */
+  .fail-card {
+    background: #c0392b;
+    color: #fff;
+    border-color: #922b21;
+  }
+
   .service {
     font-size: 1.6rem;
     font-weight: 600;
     margin-bottom: 15px;
-    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
 
   .status {
     font-size: 1.4rem;
     font-weight: 500;
-  }
-
-  .ok {
-    color: #4CAF50;
-  }
-  .warn {
-    color: #FFC107;
-  }
-  .fail {
-    color: #F44336;
   }
 
   iframe {
@@ -65,34 +78,57 @@
     border: none;
     box-shadow: 0 2px 15px rgba(0,0,0,0.6);
   }
-</style>
 
+  .icon {
+    width: 28px;
+    height: 28px;
+    opacity: 0.9;
+  }
+
+  footer {
+    margin-top: 40px;
+    font-size: 1.1rem;
+    opacity: 0.8;
+    color: #cccccc;
+  }
+</style>
 </head>
+
 <body>
 
 <div class="grid" id="dashboard"></div>
 
+<footer id="refreshTime">Último update: --:--</footer>
+
 <script>
+// Ícones minimalistas (SVG inline)
+const icons = {
+  azure: `<svg class="icon" viewBox="0 0 24 24"><path fill="white" d="M3 20L14 3l7 17H3z"/></svg>`,
+  o365: `<svg class="icon" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" stroke="white" fill="none" stroke-width="2"/></svg>`,
+  aws: `<svg class="icon" viewBox="0 0 24 24"><path stroke="white" stroke-width="2" fill="none" d="M3 6h18v12H3z"/></svg>`,
+  cloudflare: `<svg class="icon" viewBox="0 0 24 24"><circle cx="9" cy="12" r="5" stroke="white" fill="none" stroke-width="2"/><circle cx="16" cy="12" r="3" stroke="white" fill="none" stroke-width="2"/></svg>`,
+  gcp: `<svg class="icon" viewBox="0 0 24 24"><path stroke="white" stroke-width="2" fill="none" d="M12 4l8 8-8 8-8-8z"/></svg>`
+};
+
 const services = [
-  { name: "Microsoft Azure", url: "https://status.azure.com/en-us/status" },
-  { name: "Microsoft 365", url: "https://status.office.com/" },
-  { name: "Amazon Web Services", url: "https://health.aws.amazon.com/health/status" },
-  { name: "Cloudflare", url: "https://www.cloudflarestatus.com/" }
+  { name: "Microsoft Azure", url: "https://status.azure.com/en-us/status", icon: icons.azure },
+  { name: "Microsoft 365", url: "https://status.office.com/", icon: icons.o365 },
+  { name: "Amazon Web Services", url: "https://health.aws.amazon.com/health/status", icon: icons.aws },
+  { name: "Cloudflare", url: "https://www.cloudflarestatus.com/", icon: icons.cloudflare },
+  { name: "Google Cloud Platform", url: "https://status.cloud.google.com/", icon: icons.gcp }
 ];
 
-// Estado via fetch (limitado pelo CORS, mas funcional como 'heartbeat')
+// Heartbeat básico (CORS-safe)
 async function checkService(url) {
   try {
     const res = await fetch(url, { mode: "no-cors" });
-
-    // Browsers bloqueiam visibilidade em "opaque", mas isso indica que a página está acessível.
     if (res.ok || res.type === "opaque") {
-      return { status: "Operacional", class: "ok" };
+      return { status: "Operacional", class: "ok-card" };
     } else {
-      return { status: "Problemas detectados", class: "warn" };
+      return { status: "Problemas detectados", class: "warn-card" };
     }
   } catch {
-    return { status: "Indisponível", class: "fail" };
+    return { status: "Indisponível", class: "fail-card" };
   }
 }
 
@@ -104,15 +140,14 @@ async function updateDashboard() {
     const result = await checkService(svc.url);
 
     const div = document.createElement("div");
-    div.className = "card";
+    div.className = `card ${result.class}`;
 
     div.innerHTML = `
-      <div class="service">${svc.name}</div>
-      <div class="status ${result.class}">${result.status}</div>
+      <div class="service">${svc.icon} ${svc.name}</div>
+      <div class="status">${result.status}</div>
     `;
 
-    // Problemas = abrir iframe automaticamente
-    if (result.class === "warn" || result.class === "fail") {
+    if (result.class !== "ok-card") {
       const iframe = document.createElement("iframe");
       iframe.src = svc.url;
       div.appendChild(iframe);
@@ -120,13 +155,23 @@ async function updateDashboard() {
 
     dashboard.appendChild(div);
   }
+
+  // Atualizar hora do refresh
+  const now = new Date();
+  document.getElementById("refreshTime").textContent =
+    "Último update: " + now.toLocaleTimeString("pt-PT", {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
 }
 
-// Atualiza no arranque e a cada 10 minutos
+// 5 minutos
 updateDashboard();
-setInterval(updateDashboard, 10 * 60 * 1000);
+setInterval(updateDashboard, 5 * 60 * 1000);
 </script>
 
 </body>
 </html>
+
+
 
