@@ -4,39 +4,49 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Status Cloud Services</title>
+
 <style>
   body {
     font-family: "Poppins", sans-serif;
-    background: linear-gradient(135deg, #141E30, #243B55);
-    color: #fff;
+    background: linear-gradient(135deg, #000000, #2b2b2b);
+    color: #ececec;
     text-align: center;
     padding: 40px;
   }
+
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 25px;
   }
+
   .card {
-    background: rgba(255,255,255,0.1);
+    background: rgba(20, 20, 20, 0.85);
     border-radius: 18px;
     padding: 25px;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    transition: transform 0.2s;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    border: 1px solid rgba(80, 80, 80, 0.4);
+    transition: transform 0.2s, background 0.2s;
   }
+
   .card:hover {
     transform: translateY(-6px);
+    background: rgba(30, 30, 30, 0.95);
   }
+
   .service {
     font-size: 1.6rem;
     font-weight: 600;
     margin-bottom: 15px;
+    color: #ffffff;
   }
+
   .status {
     font-size: 1.4rem;
     font-weight: 500;
   }
+
   .ok {
     color: #4CAF50;
   }
@@ -46,29 +56,36 @@
   .fail {
     color: #F44336;
   }
+
   iframe {
     width: 100%;
-    height: 400px;
+    height: 380px;
     margin-top: 15px;
-    border: none;
     border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    border: none;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.6);
   }
 </style>
+
 </head>
 <body>
-  <div class="grid" id="dashboard"></div>
+
+<div class="grid" id="dashboard"></div>
 
 <script>
 const services = [
   { name: "Microsoft Azure", url: "https://status.azure.com/en-us/status" },
   { name: "Microsoft 365", url: "https://status.office.com/" },
-  { name: "Amazon Web Services", url: "https://health.aws.amazon.com/health/status" }
+  { name: "Amazon Web Services", url: "https://health.aws.amazon.com/health/status" },
+  { name: "Cloudflare", url: "https://www.cloudflarestatus.com/" }
 ];
 
+// Estado via fetch (limitado pelo CORS, mas funcional como 'heartbeat')
 async function checkService(url) {
   try {
     const res = await fetch(url, { mode: "no-cors" });
+
+    // Browsers bloqueiam visibilidade em "opaque", mas isso indica que a página está acessível.
     if (res.ok || res.type === "opaque") {
       return { status: "Operacional", class: "ok" };
     } else {
@@ -88,12 +105,13 @@ async function updateDashboard() {
 
     const div = document.createElement("div");
     div.className = "card";
+
     div.innerHTML = `
       <div class="service">${svc.name}</div>
       <div class="status ${result.class}">${result.status}</div>
     `;
 
-    // Se estiver com problemas, embute o site no iframe
+    // Problemas = abrir iframe automaticamente
     if (result.class === "warn" || result.class === "fail") {
       const iframe = document.createElement("iframe");
       iframe.src = svc.url;
@@ -104,9 +122,11 @@ async function updateDashboard() {
   }
 }
 
-// Atualiza agora e a cada 10 minutos
+// Atualiza no arranque e a cada 10 minutos
 updateDashboard();
-setInterval(updateDashboard, 600000);
+setInterval(updateDashboard, 10 * 60 * 1000);
 </script>
+
 </body>
 </html>
+
